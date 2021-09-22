@@ -21,8 +21,7 @@ struct ContentView: View {
             .scaledToFit()
             .animation(.default)
             .offset(x: self.draggedSize.width, y: 0)
-            .scaleEffect(self.scale)
-            .scaleEffect(self.isTapped ? 2 : 1,
+            .scaleEffect(self.scale,
              anchor: UnitPoint(
               x: self.pointTapped.x / reader.frame(in: .global).maxX,
               y: self.pointTapped.y / reader.frame(in: .global).maxY
@@ -30,6 +29,11 @@ struct ContentView: View {
              .gesture(TapGesture(count: 2)
              .onEnded({
             self.isTapped = !self.isTapped
+                 if self.isTapped {
+                     self.scale = 2.0
+                 }else {
+                     self.scale = 1.0
+                 }
         })
         .simultaneously(with: DragGesture(minimumDistance: 0, coordinateSpace: .global)
         .onChanged({ (value) in
@@ -37,30 +41,38 @@ struct ContentView: View {
             self.draggedSize = CGSize(
                  width: value.translation.width + self.previousDragged.width,
                  height: value.translation.height + self.previousDragged.height)
-//            print(value.startLocation)
         }).onEnded({ (value) in
-//            print(value.location)
-            let globalMaxX = reader.frame(in: .global).maxX
-            let offsetWidth = ((globalMaxX * self.scale) - globalMaxX) / 2
+
+            let offsetWidth = (reader.frame(in: .global).maxX * self.scale - reader.frame(in: .global).maxX) / 2
             let newDraggedWidth = self.draggedSize.width * self.scale
-            if (newDraggedWidth > offsetWidth) {
-                self.draggedSize = CGSize(
-                    width: offsetWidth / self.scale, 
-                    height: value.translation.height + self.previousDragged.height
-                    )
-            } else if (newDraggedWidth < -offsetWidth) {
-                self.draggedSize = CGSize(
-                    width: -offsetWidth / self.scale, 
-                    height: value.translation.height + self.previousDragged.height
-                    )
-            } else {
-                self.draggedSize = CGSize(
-                    width: value.translation.width + self.previousDragged.width, 
-                    height: value.translation.height + self.previousDragged.height
-                    )
+
+            let offsetHeight = (reader.frame(in: .global).maxY * self.scale - reader.frame(in: .global).maxY) / 2
+            let newDraggedHeight = self.draggedSize.height * self.scale
+
+            self.draggedSize = CGSize(width: value.translation.width + self.previousDragged.width,
+                                      height: value.translation.height + self.previousDragged.height)
+
+            if newDraggedWidth > offsetWidth {
+
+                self.draggedSize.width = offsetWidth/self.scale
+
+            } else if newDraggedWidth < -offsetWidth {
+
+                self.draggedSize.width =  -offsetWidth/self.scale
             }
+
+            if newDraggedHeight > offsetHeight {
+
+                self.draggedSize.height = offsetHeight/self.scale
+
+            } else if newDraggedHeight < -offsetHeight {
+
+                self.draggedSize.height =  -offsetHeight/self.scale
+            }
+
             self.previousDragged = self.draggedSize
-            }))).gesture(MagnificationGesture()
+            
+        }))).gesture(MagnificationGesture()
             .onChanged({ (scale) in
             self.scale = scale.magnitude
         }).onEnded({ (scaleFinal) in
